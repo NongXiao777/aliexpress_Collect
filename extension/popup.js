@@ -1,17 +1,26 @@
 const statusNode = document.querySelector("#status");
 const panel = document.querySelector("#product");
 const retry = document.querySelector("#retry");
+const diagnosticsPanel = document.querySelector("#diagnostics");
+const diagnosticsMessage = document.querySelector("#diagnostics-message");
 const messages = {
   unsupported_page: "请打开一个速卖通商品详情页。",
   verification_required: "请先在速卖通页面完成验证，再重新读取。",
   product_not_loaded: "商品详情还没有加载，请稍后重新读取。",
+  login_required: "请先在速卖通页面登录，再重新读取。",
 };
 let current = null;
+let reading = false;
 
 async function inspectPage() {
+  if (reading) return;
+  reading = true;
   current = null;
   panel.hidden = true;
+  diagnosticsPanel.hidden = true;
+  diagnosticsMessage.textContent = "";
   retry.hidden = true;
+  retry.disabled = true;
   statusNode.textContent = "正在读取当前页面…";
   try {
     const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
@@ -26,6 +35,19 @@ async function inspectPage() {
     });
     if (!result?.ok) {
       statusNode.textContent = messages[result?.error] || "当前标签页无法读取。";
+      if (result?.error === "verification_required") {
+        const details = result.diagnostics || {};
+        const code = typeof details.error_code === "string" && /^[a-z0-9_-]{1,32}$/i.test(details.error_code) ?
+          details.error_code : null;
+        const count = Number.isInteger(details.retry_count) && details.retry_count > 0 ?
+          Math.min(details.retry_count, 100) : null;
+        statusNode.textContent = details.state === "verification_failed" ?
+          `速卖通验证失败${code ? `（${code}）` : ""}，暂时无法读取商品。` :
+          "速卖通正在要求验证，暂时无法读取商品。";
+        diagnosticsMessage.textContent = `${count ? `本页已报告 ${count} 次失败。` : ""}` +
+          "如果手动验证也失败，请先暂停重试；验证恢复后再读取商品。";
+        diagnosticsPanel.hidden = false;
+      }
       return;
     }
     current = result.product;
@@ -40,6 +62,8 @@ async function inspectPage() {
     statusNode.textContent = "Chrome 未能读取当前标签页，请切回商品页后重试。";
   } finally {
     retry.hidden = current !== null;
+    retry.disabled = false;
+    reading = false;
   }
 }
 

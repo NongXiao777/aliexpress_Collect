@@ -1,5 +1,5 @@
 function collectAliExpressProduct(doc = document, page = window, address = location.href) {
-  const fail = error => ({ok: false, error});
+  const fail = (error, diagnostics) => ({ok: false, error, ...(diagnostics ? {diagnostics} : {})});
   let source;
   try {
     source = new URL(address);
@@ -15,11 +15,33 @@ function collectAliExpressProduct(doc = document, page = window, address = locat
   const children = value => Array.isArray(value) ? value : [];
   const element = selectors => doc.querySelector(selectors);
   const meta = name => clean(element(`meta[property="${name}"]`)?.content, 2000);
-  if (source.pathname.includes("/_____tmd_____/punish") ||
-      element("#captchacharacters, #baxia-dialog-content, form[action*='validateCaptcha']") ||
-      /^(security verification|robot check|access denied|sign in)\b/i.test(doc.title || "")) {
-    return fail("verification_required");
+  const challenge = element("#captchacharacters, #baxia-dialog-content, #nocaptcha, form[action*='validateCaptcha']");
+  const challengeVisible = challenge && !challenge.hidden &&
+    (typeof challenge.getClientRects !== "function" || challenge.getClientRects().length > 0);
+  if (source.pathname.includes("/_____tmd_____/punish") || challengeVisible ||
+      /^(security verification|robot check|access denied)\b|验证码拦截|安全验证/i.test(doc.title || "")) {
+    const message = clean(element(".errloading, #nc_1__scale_text, #nocaptcha")?.textContent, 500);
+    const errorCode = message.match(/error\s*:\s*([a-z0-9_-]{1,32})(?=[\s)]|$)/i)?.[1] || null;
+    let retryCount = null;
+    for (const link of Array.from(doc.querySelectorAll("a[href]")).slice(0, 100)) {
+      try {
+        const feedback = new URL(link.href, source);
+        if (feedback.origin !== source.origin || !feedback.pathname.includes("/_____tmd_____/page/feedback")) continue;
+        const codes = (feedback.searchParams.get("errorcode") || "").split(",")
+          .filter(code => /^[a-z0-9_-]{1,32}$/i.test(code));
+        if (codes.length) retryCount = Math.min(codes.length, 100);
+      } catch {
+        // Feedback links are optional; only their public failure count is retained.
+      }
+    }
+    return fail("verification_required", {
+      state: errorCode || /验证失败|verification failed|请点我重试/i.test(message) ?
+        "verification_failed" : "verification_pending",
+      error_code: errorCode,
+      retry_count: retryCount,
+    });
   }
+  if (/^sign in\b/i.test(doc.title || "")) return fail("login_required");
   if (!itemId) return fail("unsupported_page");
 
   const imageLink = value => {
@@ -66,9 +88,24 @@ function collectAliExpressProduct(doc = document, page = window, address = locat
     }
   }
 
-  const elementTitle = element("[data-pl='product-title'] h1, h1[data-pl='product-title'], [class*='title--wrap--'] h1, h1");
-  const title = clean(structured?.PRODUCT_TITLE?.text) || clean(schema?.name) || clean(elementTitle?.textContent);
-  if (!title || /^(aliexpress|oops!?|page not found|sorry|error|sign in)$/i.test(title)) {
+  const genericTitle = /^(aliexpress|oops!?|page not found|sorry|error|sign in)$/i;
+  const visible = node => {
+    if (node.hidden || (typeof node.getClientRects === "function" && !node.getClientRects().length)) return false;
+    const style = typeof page.getComputedStyle === "function" ? page.getComputedStyle(node) : null;
+    return style?.display !== "none" && style?.visibility !== "hidden" && style?.visibility !== "collapse";
+  };
+  let elementTitle = "";
+  for (const selector of [
+    "[data-pl='product-title'] h1, h1[data-pl='product-title']",
+    "[class*='title--wrap--'] h1",
+    "h1",
+  ]) {
+    elementTitle = Array.from(doc.querySelectorAll(selector)).filter(visible)
+      .map(node => clean(node.textContent)).find(text => text && !genericTitle.test(text)) || "";
+    if (elementTitle) break;
+  }
+  const title = clean(structured?.PRODUCT_TITLE?.text) || clean(schema?.name) || elementTitle;
+  if (!title || genericTitle.test(title)) {
     return fail("product_not_loaded");
   }
 
@@ -129,7 +166,10 @@ function collectAliExpressProduct(doc = document, page = window, address = locat
     });
   }
 
-  const visiblePrice = element("[data-pl='product-price'] [class*='price'], [class*='price--currentPriceText--']");
+  const visiblePrice = Array.from(doc.querySelectorAll(
+    "[data-pl='product-price'] [class*='price'], [class*='price--currentPriceText--'], " +
+      "[class*='price-default--currentWrap--'] [class*='price-default--current--']",
+  )).find(node => visible(node) && clean(node.textContent, 100));
   const description = element("#product-description, [data-pl='product-description']");
   return {ok: true, product: {
     source: "aliexpress",

@@ -9,6 +9,8 @@ main { padding: 18px; }
 h1 { font-size: 19px; margin: 0 0 7px; }
 p { font-size: 12px; line-height: 1.65; margin: 0; }
 #status { color: #485a51; min-height: 20px; }
+#diagnostics { background: #fff8e8; border: 1px solid #dfc994; border-radius: 8px; padding: 12px; }
+#diagnostics-message { color: #725526; }
 section { margin-top: 14px; border-top: 1px solid #d1ddd3; padding-top: 13px; }
 h2 { font-size: 14px; line-height: 1.5; margin: 0; overflow-wrap: anywhere; }
 dl { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 10px; margin: 16px 0; }

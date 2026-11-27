@@ -1,9 +1,13 @@
 {
   "manifest_version": 3,
   "name": "速卖通商品采集助手",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "读取当前速卖通商品详情，导出 JSON 或复制链接给智赢单个采集。",
   "permissions": ["activeTab", "scripting"],
+  "host_permissions": ["https://www.aliexpress.com/*", "https://m.aliexpress.com/*", "https://aliexpress.com/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_title": "采集速卖通商品",
     "default_popup": "popup.html"
