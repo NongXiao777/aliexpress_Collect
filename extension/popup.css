@@ -1,0 +1,23 @@
+:root {
+  color-scheme: light;
+  font-family: "Microsoft YaHei UI", "Segoe UI", sans-serif;
+  color: #182520;
+  background: #f0f4ed;
+}
+body { width: 356px; margin: 0; }
+main { padding: 18px; }
+h1 { font-size: 19px; margin: 0 0 7px; }
+p { font-size: 12px; line-height: 1.65; margin: 0; }
+#status { color: #485a51; min-height: 20px; }
+section { margin-top: 14px; border-top: 1px solid #d1ddd3; padding-top: 13px; }
+h2 { font-size: 14px; line-height: 1.5; margin: 0; overflow-wrap: anywhere; }
+dl { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 10px; margin: 16px 0; }
+dt { font-size: 11px; color: #485a51; }
+dd { margin: 3px 0 0; font-size: 13px; font-variant-numeric: tabular-nums; }
+.actions { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+button { border: 1px solid #afc1b2; padding: 9px 11px; border-radius: 7px; background: #fff; color: #234033; font: inherit; font-size: 12px; cursor: pointer; }
+button.primary { background: #214c39; border-color: #214c39; color: #fff; }
+button:hover { border-color: #214c39; }
+button:focus-visible { outline: 2px solid #37664d; outline-offset: 2px; }
+#retry { margin-top: 12px; }
+.handoff { color: #485a51; margin-top: 10px; }

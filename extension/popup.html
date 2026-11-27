@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>速卖通商品采集助手</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main>
+    <h1>速卖通商品采集</h1>
+    <p id="status" role="status" aria-live="polite">正在读取当前页面…</p>
+    <section id="product" aria-label="商品详情" hidden>
+      <h2 id="product-title"></h2>
+      <dl>
+        <div><dt>来源 ID</dt><dd id="product-id"></dd></div>
+        <div><dt>页面价格</dt><dd id="price"></dd></div>
+        <div><dt>图片</dt><dd id="images"></dd></div>
+        <div><dt>变体</dt><dd id="variants"></dd></div>
+      </dl>
+      <div class="actions">
+        <button id="copy-link" class="primary">复制链接给智赢</button>
+        <button id="export">导出 JSON</button>
+      </div>
+      <p class="handoff">在智赢客户端的「产品 → 产品采集 → 单个采集」粘贴链接。</p>
+    </section>
+    <button id="retry" hidden>重新读取</button>
+  </main>
+  <script src="collector.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
